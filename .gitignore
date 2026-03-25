@@ -1,0 +1,39 @@
+# Environment variables (contains secrets)
+.env
+.env.local
+.env.*.local
+
+# Local fallback DB
+local_items.json
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg
+*.egg-info/
+dist/
+build/
+.eggs/
+.venv/
+venv/
+env/
+
+# AWS credentials (never commit)
+.aws/
+credentials
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log

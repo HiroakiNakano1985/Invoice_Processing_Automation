@@ -1,0 +1,533 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Invoice Payment Dashboard</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <!-- Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=DM+Sans:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg:#0b1224; --bg-alt:#0e1730; --panel:#121e3f; --panel-2:#0f1a36;
+      --text:#e6edf7; --muted:#9fb3d6; --primary:#4ea1ff; --primary-2:#2563eb;
+      --accent:#7dd3fc; --success:#22c55e; --danger:#ef4444; --warn:#f59e0b;
+      --border:#1b2a56; --shadow:0 12px 30px rgba(0,16,61,0.35);
+    }
+
+    *{ box-sizing:border-box }
+    html,body{ height:100% }
+    body{
+      margin:0; font-family:'Inter','DM Sans',system-ui, sans-serif; color:var(--text);
+      background:
+        radial-gradient(1200px 600px at 10% -10%, #0b1224 0%, #0b1224 40%, #0e1730 80%),
+        linear-gradient(180deg, #0b1224 0%, #0e1730 100%);
+      padding:24px;
+    }
+
+    .container{ max-width:1200px; margin:0 auto; }
+    header{ display:flex; align-items:center; justify-content:space-between; margin-bottom:18px; }
+    .brand{
+      display:flex; align-items:center; gap:10px; font-weight:700; letter-spacing:.02em;
+    }
+    .logo{
+      width:36px; height:36px; border-radius:10px; background:
+        radial-gradient(circle at 30% 30%, #4ea1ff 0, #2563eb 60%, #0b1224 100%);
+      box-shadow:0 10px 24px rgba(37,99,235,.4);
+    }
+    .tag{ padding:6px 10px; border:1px solid var(--border); border-radius:999px; background:rgba(18,30,63,.6); color:var(--muted); }
+
+    /* Panel */
+    .panel{
+      background:linear-gradient(180deg, rgba(18,30,63,.8), rgba(15,26,54,.95));
+      border:1px solid var(--border); border-radius:16px; box-shadow:var(--shadow); overflow:hidden;
+      margin-bottom:18px;
+    }
+    .panel-header{
+      display:flex; justify-content:space-between; align-items:center;
+      padding:14px 16px; border-bottom:1px solid var(--border);
+    }
+    .panel-title{ font-weight:600; letter-spacing:.02em; }
+    .panel-body{ padding:14px 16px; }
+
+    /* Controls */
+    .controls{ display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+    .input, select{
+      padding:8px 10px; border-radius:10px; border:1px solid var(--border);
+      background:#0f1a36; color:var(--text); outline:none;
+    }
+    .btn{
+      padding:8px 12px; border-radius:10px; border:1px solid var(--border);
+      background:linear-gradient(180deg, #1b2f66, #152752); color:var(--text);
+      cursor:pointer; transition:transform .08s ease, box-shadow .12s ease, border-color .12s ease;
+    }
+    .btn:hover{ transform:translateY(-1px); box-shadow:0 8px 22px rgba(0,16,61,.35); border-color:#2a4385; }
+    .btn-primary{ background:linear-gradient(180deg, #2a54ad, #1f3f85); border-color:#2a4385 }
+    .btn-link{ background:transparent; color:var(--accent); border:none; text-decoration:underline; padding:6px 0; }
+
+    /* Upload link */
+    .upload-link{
+      display:inline-flex; align-items:center; gap:8px; padding:10px 14px;
+      background:linear-gradient(180deg, #2a54ad, #1f3f85); color:#fff;
+      border:1px solid #2a4385; border-radius:10px; text-decoration:none; font-weight:600;
+    }
+
+    /* Table */
+    table{ width:100%; border-collapse:collapse; background:transparent; }
+    th, td{ padding:12px; border-bottom:1px solid var(--border); text-align:left; vertical-align:top; }
+    th{
+      background:linear-gradient(180deg, rgba(15,26,54,1), rgba(15,26,54,.7));
+      font-weight:600; font-size:.9rem; color:#c9d7f0; letter-spacing:.02em;
+    }
+    tr:hover{ background:rgba(18,30,63,.55) }
+    .mono{ font-family:ui-monospace, Menlo, Consolas, monospace; }
+    .right{ text-align:right; }
+    .status-badge{
+      display:inline-block; font-size:.72rem; font-weight:700; letter-spacing:.02em;
+      padding:3px 8px; border-radius:999px; border:1px solid var(--border);
+    }
+    .paid{ background:rgba(34,197,94,.14); color:#86efac; border-color:#14532d }
+    .unpaid{ background:rgba(239,68,68,.14); color:#fecaca; border-color:#7f1d1d }
+
+    /* Column sizing */
+    th.vendor, td.vendor{ width:32%; }
+    th.items, td.items{ width:28%; }
+    th.status, td.status{ width:8%; }
+    th.actions, td.actions{ width:16%; }
+
+    /* Calendar */
+    .calendar-weekdays{
+      display:grid; grid-template-columns:repeat(7,1fr); gap:8px; margin-bottom:8px;
+      text-align:center; font-weight:700; color:#a7c2ff;
+    }
+    .calendar-grid{ display:grid; grid-template-columns:repeat(7,1fr); gap:8px; }
+    .day{
+      background:#152752; border:1px solid var(--border); border-radius:12px; padding:10px; min-height:92px;
+    }
+    .day .date{ font-size:.82rem; color:#cbd5e1; margin-bottom:6px }
+    .day .amount{ font-weight:700; color:#7dd3fc }
+    .legend{ display:flex; gap:10px; color:var(--muted); font-size:.85rem; margin-top:8px }
+
+    /* Chart */
+    .chart-wrap{ height:280px }
+
+    /* State */
+    .state{ margin-left:10px; color:var(--muted) }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="brand">
+        <div class="logo"></div>
+        <div>Invoice Payment Dashboard</div>
+      </div>
+      <div class="tag">Secure • Serverless • Scalable</div>
+    </header>
+
+    <!-- Upload link (separate page) -->
+    <div class="panel">
+      <div class="panel-header">
+        <div class="panel-title">Upload</div>
+      </div>
+      <div class="panel-body">
+        <form action="/upload" method="post" enctype="multipart/form-data">
+          <input type="file" name="file" accept="application/pdf">
+          <button type="submit" class="upload-link">Upload</button>
+        </form>
+      </div>
+    </div>
+
+
+    <!-- Invoices -->
+    <div class="panel">
+      <div class="panel-header">
+        <div class="panel-title">Invoices</div>
+        <div class="controls">
+          <label class="input">Sort
+            <select id="sort">
+              <option value="due">Due date (soonest)</option>
+              <option value="amount">Amount (highest)</option>
+              <option value="upload">Upload date (newest)</option>
+            </select>
+          </label>
+          <label class="input">Filter
+            <select id="statusFilter">
+              <option value="all">All</option>
+              <option value="paid">Paid</option>
+              <option value="unpaid">Unpaid</option>
+            </select>
+          </label>
+          <span id="tableState" class="state"></span>
+        </div>
+      </div>
+      <div class="panel-body">
+        <table aria-label="Invoices">
+          <thead>
+            <tr>
+              <th>Upload Date</th>
+              <th class="vendor">Vendor</th>
+              <th class="items">Items</th>
+              <th class="right">Total</th>
+              <th class="status">Status</th>
+              <th>Due Date</th>
+              <th class="actions">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="tableBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Monthly overview -->
+    <div class="panel">
+      <div class="panel-header">
+        <div class="panel-title">Monthly overview</div>
+        <div class="controls">
+          <label class="input">Month
+            <select id="monthSelect"></select>
+          </label>
+        </div>
+      </div>
+      <div class="panel-body">
+        <div class="calendar-weekdays">
+          <div>Sun</div><div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div>
+        </div>
+        <div class="calendar-grid" id="calendarGrid"></div>
+        <div class="legend">
+          <span>• Blue: total scheduled per day</span>
+        </div>
+
+        <!-- Monthly totals bar chart -->
+        <div class="panel" style="margin-top:16px;">
+          <div class="panel-header">
+            <div class="panel-title">Monthly totals</div>
+            <div id="chartState" class="state"></div>
+          </div>
+          <div class="panel-body">
+            <div class="chart-wrap">
+              <canvas id="barChart"></canvas>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <footer style="margin-top:10px; color:var(--muted)">
+      Tip: return consistent JSON types from Lambda; format for display in the UI.
+    </footer>
+  </div>
+
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <script>
+    // ================= Backend integration =================
+    // Replace with your API endpoints:
+    const API_LIST = "https://your-api-id.execute-api.region.amazonaws.com/prod/invoices"; // GET JSON array
+
+let invoices = [];
+
+fetch("/api/items")
+  .then(resp => resp.json())
+  .then(data => {
+    if (data.ok) {
+      invoices = data.items;
+      renderTable(invoices);   
+      populateMonths();        
+      renderCalendar();        
+      renderChart();           
+    } else {
+      console.error("API returned error:", data.error);
+    }
+  })
+  .catch(err => console.error("Failed to load invoices:", err));
+
+// ================= Utilities =================
+function escapeHTML(s) {
+  return String(s ?? "").replace(/[&<>"']/g, m => ({
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#39;'
+  }[m]));
+}
+
+function toNumber(n) {
+  const x = Number(n);
+  return Number.isFinite(x) ? x : 0;
+}
+
+function parseItems(v) {
+  if (Array.isArray(v)) return v;
+  if (typeof v === "string") {
+    try {
+      return JSON.parse(v);
+    } catch {
+      return [];
+    }
+  }
+  return [];
+}
+
+function toDateNum(val) {
+  if (typeof val === "number") return val;
+  const t = Date.parse(String(val));
+  return Number.isFinite(t) ? t : 0;
+}
+
+function fmtDate(val) {
+  const d = new Date(typeof val === "number" ? val : String(val));
+  return Number.isNaN(d.getTime()) ? String(val) : d.toLocaleString();
+}
+
+function fmtMoney(n) {
+  const v = toNumber(n);
+  return v.toLocaleString(undefined, { style: 'currency', currency: 'USD' });
+}
+
+// ================= Rendering: Invoices =================
+const elTableBody = document.getElementById("tableBody");
+const elTableState = document.getElementById("tableState");
+const elSort = document.getElementById("sort");
+const elStatusFilter = document.getElementById("statusFilter");
+
+function renderTable() {
+  let rows = invoices.slice();
+
+  // Filter: All / Paid / Unpaid
+  const f = elStatusFilter.value;
+if (f === "paid") rows = rows.filter(r => r.PaymentStatus === true);
+if (f === "unpaid") rows = rows.filter(r => r.PaymentStatus === false);
+  // Sort
+  const sort = elSort.value;
+  rows.sort((a, b) => {
+    if (sort === "due") return toDateNum(a.DueDate) - toDateNum(b.DueDate);
+    if (sort === "amount") return toNumber(b.Total) - toNumber(a.Total);
+    if (sort === "upload") return toDateNum(b.UploadDate) - toDateNum(a.UploadDate);
+    return 0;
+  });
+
+  
+  function fmtDate(value) {
+    if (!value) return "";
+    const d = new Date(value);
+    if (isNaN(d)) {
+      
+      const parts = String(value).split(/[\/.\- ]/); 
+      if (parts.length >= 3) {
+        if (parts[0].length === 4) {
+          return `${parts[2]}/${parts[1]}/${parts[0]}`;
+        }
+        return `${parts[0]}/${parts[1]}/${parts[2]}`;
+      }
+      return String(value);
+    }
+    return d.toLocaleDateString("en-GB");
+  }
+
+  
+  function fmtMoneyEUR(value) {
+    if (!value) return "";
+    const num = parseFloat(String(value).replace(/[^\d.-]/g, "")) || 0;
+    return num.toLocaleString("de-DE", { style: "currency", currency: "EUR" });
+  }
+
+
+  elTableBody.innerHTML = rows.map(r => {
+    console.log("Row data:", r.Total, r.DueDate, r.UploadDate);
+
+    const items = parseItems(r.Items);
+    const itemsStr = items.map(i =>
+      `${escapeHTML(i.description ?? "")} x${escapeHTML(i.quantity ?? "")} @ ${escapeHTML(i.unitPrice ?? "")}`
+    ).join("; ");
+    const badge = r.PaymentStatus
+      ? `<span class="status-badge paid">Paid</span>`
+      : `<span class="status-badge unpaid">Unpaid</span>`;
+    const pdfUrl = `https://${escapeHTML(r.Bucket)}.s3.amazonaws.com/${escapeHTML(r.Document)}`;
+
+    return `
+      <tr>
+        <td>${fmtDate(r.UploadDate)}</td>
+        <td class="vendor">${escapeHTML(r.Vendor)}</td>
+        <td class="items">${itemsStr}</td>
+        <td class="right">${fmtMoneyEUR(r.Total)}</td>
+        <td class="status">${badge}</td>
+        <td>${fmtDate(r.DueDate)}</td>
+        <td class="actions">
+          <button class="btn btn-primary"
+                  onclick="payInvoice('${encodeURIComponent(r.Vendor)}','${encodeURIComponent(r.Document)}')"
+                  ${r.PaymentStatus ? 'disabled' : ''}>Pay</button>
+          <a class="btn-link" href="${escapeHTML(r.PdfUrl)}" target="_blank" rel="noopener">View PDF</a>
+        </td>
+      </tr>
+    `;
+  }).join("");
+}
+
+    // Stub: payment trigger (replace with real API call)
+    function payInvoice(vendorEnc, docEnc){
+      const vendor = decodeURIComponent(vendorEnc);
+      const doc = decodeURIComponent(docEnc);
+      alert("Payment API call would be triggered for: " + vendor + " (" + doc + ")");
+    }
+
+    // ================= Monthly Overview (calendar + chart) =================
+    const elMonthSelect = document.getElementById("monthSelect");
+    const elCalendarGrid = document.getElementById("calendarGrid");
+    const elChartState = document.getElementById("chartState");
+    let chartInstance = null;
+
+function populateMonths() {
+  if (!invoices || !invoices.length) {
+    console.warn("No invoices data");
+    elMonthSelect.innerHTML = "";
+    elCalendarGrid.innerHTML = "<div class='state'>No data</div>";
+    return;
+  }
+
+  const set = new Set();
+  invoices.forEach(r => {
+    const d = new Date(r.DueDate || r.UploadDate);
+    if (!isNaN(d.getTime())) {
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+      set.add(key);
+    }
+  });
+
+  const labels = Array.from(set).sort((a, b) => a.localeCompare(b));
+  elMonthSelect.innerHTML = labels.map(m => `<option value="${m}">${m}</option>`).join("");
+
+  if (labels.length) {
+    elMonthSelect.value = labels[labels.length - 1]; 
+    console.log("Month labels:", labels, "Selected:", elMonthSelect.value);
+
+    
+    renderCalendar();
+    renderChart();
+  } else {
+    console.warn("No month labels generated");
+    elCalendarGrid.innerHTML = "<div class='state'>No month available</div>";
+  }
+}
+
+function renderCalendar() {
+  const ym = elMonthSelect.value;
+  if (!ym) {
+    elCalendarGrid.innerHTML = "<div class='state'>No month selected</div>";
+    return;
+  }
+
+  const [y, m] = ym.split("-").map(Number);
+  const first = new Date(y, m - 1, 1);
+  const last = new Date(y, m, 0);
+  const days = last.getDate();
+
+  
+  const agg = Array(days).fill(0);
+
+  invoices.forEach(r => {
+    console.log("DueDate:", r.DueDate, "UploadDate:", r.UploadDate, "Total:", r.Total, typeof r.Total);
+
+    
+    const d = new Date(r.DueDate || r.UploadDate);
+    if (!isNaN(d.getTime()) && d.getFullYear() === y && (d.getMonth() + 1) === m) {
+      agg[d.getDate() - 1] += Number(r.Total) || 0;
+    }
+  });
+
+  const cells = [];
+  
+  const startPad = first.getDay();
+  for (let p = 0; p < startPad; p++) {
+    cells.push(`<div class="day"></div>`);
+  }
+
+  
+  for (let i = 1; i <= days; i++) {
+    const amount = agg[i - 1];
+    const dateLabel = `${ym}-${String(i).padStart(2, '0')}`;
+    cells.push(`
+      <div class="day">
+        <div class="date">${dateLabel}</div>
+        <div class="amount">${amount ? fmtMoney(amount) : "<span class='state'>—</span>"}</div>
+      </div>
+    `);
+  }
+
+  elCalendarGrid.innerHTML = cells.join("");
+}
+
+
+elMonthSelect.addEventListener("change", () => {
+  renderCalendar();
+  renderChart();
+});
+
+    function renderChart(){
+      const monthly = new Map(); // "YYYY-MM" -> total
+      invoices.forEach(r => {
+        const d = new Date(toDateNum(r.DueDate || r.UploadDate));
+        if (Number.isNaN(d.getTime())) return;
+        const key = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+        monthly.set(key, (monthly.get(key) || 0) + toNumber(r.Total));
+      });
+      const labels = Array.from(monthly.keys()).sort((a,b) => a.localeCompare(b));
+      const values = labels.map(k => monthly.get(k));
+      const ctx = document.getElementById("barChart");
+
+      if (chartInstance) chartInstance.destroy();
+      chartInstance = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels,
+          datasets: [{
+            label: 'Monthly totals',
+            data: values,
+            backgroundColor: 'rgba(78,161,255,0.4)',
+            borderColor: '#4ea1ff',
+            borderWidth: 1.5,
+            borderRadius: 8,
+            hoverBackgroundColor: 'rgba(78,161,255,0.65)'
+          }]
+        },
+        options: {
+          plugins: {
+            legend: { labels: { color: '#c9d7f0' } },
+            tooltip: { callbacks: { label: ctx => fmtMoney(ctx.parsed.y) } }
+          },
+          scales: {
+            x: { ticks: { color: '#c9d7f0' }, grid: { color: '#1b2a56' } },
+            y: { ticks: { color: '#c9d7f0' }, grid: { color: '#1b2a56' } }
+          }
+        }
+      });
+      elChartState.textContent = labels.length ? "" : "No data";
+    }
+
+    // ================= Data fetch (switch from sample to API) =================
+    async function fetchInvoices(){
+      try{
+        elTableState.textContent = "Loading...";
+        // Uncomment when backend is ready:
+        // const res = await fetch(API_LIST, { method:"GET", credentials:"include" });
+        // if (!res.ok) throw new Error("HTTP " + res.status);
+        // invoices = await res.json();
+
+        elTableState.textContent = "";
+        renderTable();
+        populateMonths();
+        renderCalendar();
+        renderChart();
+      }catch(e){
+        elTableState.textContent = "Failed to load: " + e.message;
+      }
+    }
+
+    // ================= Init =================
+    elSort.addEventListener("change", renderTable);
+    elStatusFilter.addEventListener("change", renderTable);
+    fetchInvoices();
+  </script>
+</body>
+</html>
