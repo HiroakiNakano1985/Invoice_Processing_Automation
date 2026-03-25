@@ -242,14 +242,48 @@ def find_latest_for_invoice(invoice_id):
 
 
 # --------------------
+# Auth helpers
+# --------------------
+APP_PASSWORD = os.environ.get("APP_PASSWORD")
+
+def login_required(f):
+    from functools import wraps
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        if not session.get("authenticated"):
+            return redirect(url_for("login"))
+        return f(*args, **kwargs)
+    return decorated
+
+
+# --------------------
 # Routes - pages
 # --------------------
+@app.route("/login", methods=["GET", "POST"])
+def login():
+    error = None
+    if request.method == "POST":
+        if request.form.get("password") == APP_PASSWORD:
+            session["authenticated"] = True
+            return redirect(url_for("home"))
+        error = "パスワードが違います"
+    return render_template("login.html", error=error)
+
+
+@app.route("/logout")
+def logout():
+    session.clear()
+    return redirect(url_for("login"))
+
+
 @app.route("/", methods=["GET"])
+@login_required
 def home():
     return render_template("index.html", page="home")
 
 
 @app.route("/upload", methods=["GET", "POST"])
+@login_required
 def upload():
     if request.method == "POST":
         if "file" not in request.files:
@@ -278,6 +312,7 @@ def upload():
 
 
 @app.route("/dashboard", methods=["GET"])
+@login_required
 def dashboard():
     # list S3 files
     files = []
