@@ -26,7 +26,7 @@ from dotenv import load_dotenv
 load_dotenv()
 from datetime import datetime, timezone
 from decimal import Decimal
-from flask import Flask, render_template, request, redirect, url_for, flash, jsonify
+from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, session
 from werkzeug.utils import secure_filename
 import boto3
 from botocore.exceptions import ClientError, NoCredentialsError
