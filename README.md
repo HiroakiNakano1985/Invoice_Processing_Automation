@@ -89,5 +89,10 @@ The app will be available at `http://localhost:5000`.
 
 Deploy `lambda_function.py` to AWS Lambda with:
 - **Trigger**: S3 `ObjectCreated` event on your bucket
+
+## Author  
+Hiroaki Nakano
+ESADE Master in Business Analytics
+Director, Japan Post Bank
 - **Environment variable**: `DYNAMO_TABLE` = your DynamoDB table name
 - **IAM permissions**: `s3:GetObject`, `textract:AnalyzeExpense`, `dynamodb:PutItem`
